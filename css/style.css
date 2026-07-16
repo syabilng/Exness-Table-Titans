@@ -137,11 +137,8 @@ body {
 }
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand-mark {
-  width: 44px; height: 44px; display: grid; place-items: center;
-  font-size: 22px;
-  background: linear-gradient(160deg, var(--ember) 0%, #b3300a 100%);
-  clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%);
-  box-shadow: 0 6px 24px rgba(255, 92, 31, 0.35);
+  height: 52px; width: auto; display: block;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.55));
 }
 .brand-text { display: flex; flex-direction: column; line-height: 1.05; }
 .brand-top { font-family: var(--display); font-size: 16px; letter-spacing: 0.02em; }
