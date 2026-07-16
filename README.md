@@ -1,6 +1,8 @@
-# 🏓 PADDLE ROYALE — Inter-Department Table Tennis Leaderboard
+# 🏓 EXNESS PING PONG ALL-STARZ — Weekly Leaderboard
 
-A gritty, broadcast-graphics-style weekly leaderboard for office table tennis.
+A retro sports-poster weekly leaderboard for office table tennis (NBA×ESPN
+campaign style: grape/cream/brick/teal/magenta palette, halftone bursts,
+chunky slab-stacked banners, hard offset type shadows).
 Static site — no build step. Player data lives in a shared Firebase Firestore
 database, so anyone with the link sees and edits the same live leaderboard in
 real time.
@@ -18,9 +20,13 @@ python3 -m http.server 8000
 
 ## Features
 
+- **Poster hero** — full-screen intro with the club shield, giant display
+  type, parallax halftone/star/scribble decorations, and ping pong balls that
+  spin with the scroll; the leaderboard section reveals as you scroll to it.
 - **Weekly leaderboard banners** — rank, photo, This-Week W–L and All-Time W–L
   for every player, sorted by weekly wins. Auto-resets weekly stats when a new
   ISO week starts (all-time records are kept), plus a manual ⟲ reset button.
+  Banners are chunky layered slabs that lift, tilt, and spread on hover.
 - **Award-style entrance** — preloader, 3D flip-in banner stagger with rolling
   rank counters, ticker tape of live standings.
 - **Cursor interactions** — banners lift and tilt in 3D toward the cursor with
@@ -53,7 +59,7 @@ bundled generated ambient loop (`assets/music-loop.wav`).
 - [Firebase Firestore](https://firebase.google.com/docs/firestore) (loaded
   from Google's official CDN) for shared, real-time player data
 - Canvas 2D ambient background (drifting embers + perspective court lines)
-- Fonts vendored locally (Archivo Black, Barlow Condensed)
+- Fonts vendored locally (Spaceland Eight Oblique for display, Barlow Condensed for labels)
 
 ## Shared data (Firestore)
 
