@@ -1,8 +1,9 @@
 # 🏓 PADDLE ROYALE — Inter-Department Table Tennis Leaderboard
 
 A gritty, broadcast-graphics-style weekly leaderboard for office table tennis.
-Static site — no build step, no backend. All data lives in your browser's
-`localStorage`.
+Static site — no build step. Player data lives in a shared Firebase Firestore
+database, so anyone with the link sees and edits the same live leaderboard in
+real time.
 
 ## Run it
 
@@ -46,15 +47,51 @@ bundled generated ambient loop (`assets/music-loop.wav`).
 
 ## Stack
 
-- Vanilla HTML/CSS/JS
+- Vanilla HTML/CSS/JS (`js/app.js` is loaded as an ES module)
 - [GSAP 3](https://gsap.com) (vendored at `js/vendor/gsap.min.js`) for all
   animation
+- [Firebase Firestore](https://firebase.google.com/docs/firestore) (loaded
+  from Google's official CDN) for shared, real-time player data
 - Canvas 2D ambient background (drifting embers + perspective court lines)
 - Fonts vendored locally (Archivo Black, Barlow Condensed)
 
+## Shared data (Firestore)
+
+Player records live in a `players` collection (one document per player) plus
+a single `leaderboard/meta` document holding the current ISO week. Every
+visitor's browser subscribes live via `onSnapshot`, so adding a player,
+recording a match, or a quick +WIN/+LOSS shows up for everyone within a
+moment — no login required, by design.
+
+The Firebase project config in `js/app.js` (`firebaseConfig`) is not a
+secret — Firebase client keys are meant to be public; access is controlled
+entirely by the Firestore **security rules**, set once in the Firebase
+console under Firestore Database → Rules:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /players/{playerId} { allow read, write: if true; }
+    match /leaderboard/{docId} { allow read, write: if true; }
+  }
+}
+```
+
+This intentionally allows anyone with the link to read and write leaderboard
+data (no accounts, matching the "just for us to see who's leading" brief).
+Firestore's default "test mode" rules expire after 30 days — publish the
+rules above to keep the site working indefinitely.
+
+Because writes use Firestore's atomic `increment()` and batched writes,
+concurrent edits (two people clicking "+1 win" at once) resolve safely
+without one overwriting the other.
+
 ## Notes
 
-- Data schema is stored under the `paddle-royale-v1` localStorage key; audio
-  preferences under `paddle-royale-audio`. Clearing site data reseeds the
-  default roster.
+- Audio volume/mute preferences are personal and stay in each browser's
+  `localStorage` under `paddle-royale-audio` — they don't sync between
+  people, only the leaderboard data does.
 - Fully responsive; tilt/hover effects gracefully degrade on touch.
+- If the page can't reach Firestore (offline, rules not published yet), it
+  shows an alert rather than silently failing.
