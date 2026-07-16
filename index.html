@@ -40,8 +40,9 @@
     <span class="week-value" id="weekValue">—</span>
   </div>
   <nav class="header-actions">
-    <button class="btn btn-solid" id="btnRecord">＋ RECORD MATCH</button>
+    <button class="btn btn-solid" id="btnRecord">🏓 RECORD MATCH</button>
     <button class="btn btn-ghost" id="btnAdd">＋ ADD PLAYER</button>
+    <button class="btn btn-ghost" id="btnRules">RULES</button>
     <button class="btn btn-ghost btn-icon" id="btnReset" title="Reset weekly scores">⟲</button>
   </nav>
 </header>
@@ -74,6 +75,7 @@
     <p class="hero-tag" data-hero>One table. Every department. Zero mercy.</p>
     <div class="hero-ctas" data-hero>
       <button class="btn btn-solid btn-lg" id="btnToBoard">SEE THE BOARD ↓</button>
+      <button class="btn btn-ghost btn-lg" id="btnRulesHero">HOUSE RULES</button>
     </div>
   </div>
 
@@ -157,6 +159,149 @@
   </div>
 </section>
 
+<!-- ============ RULES PAGE ============ -->
+<section class="page" id="rulesPage" aria-hidden="true">
+  <div class="page-wipe" aria-hidden="true"></div>
+  <div class="page-deco" aria-hidden="true">
+    <div class="dots dots-r"></div>
+    <svg class="deco star-r" viewBox="0 0 60 60"><path d="M30 4 37 23 56 30 37 37 30 56 23 37 4 30 23 23Z" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+  </div>
+  <div class="page-inner">
+    <button class="page-back" data-back>← BACK TO BOARD</button>
+    <h2 class="page-title">HOUSE <span>RULES</span></h2>
+    <p class="rules-intro">
+      In standard table tennis, games are officially played to <b>11 points</b>.
+      The older 21-point system was phased out in 2001, but recreational players
+      often still use it — or a 15-point format. Regardless of the target,
+      <b>the game must always be won by a 2-point margin.</b>
+    </p>
+
+    <div class="rules-grid">
+      <article class="rule-card">
+        <div class="rule-target">TO <b>11</b></div>
+        <div class="rule-badge">OFFICIAL ITTF RULE</div>
+        <dl class="rule-list">
+          <dt>SERVICE</dt>
+          <dd>Players alternate serving <b>2 points</b> at a time.</dd>
+          <dt>DEUCE</dt>
+          <dd>If the score ties at <b>10–10</b>, serves alternate every <b>1 point</b> until one player gains a 2-point lead (e.g. 12–10 or 15–13).</dd>
+        </dl>
+      </article>
+
+      <article class="rule-card">
+        <div class="rule-target">TO <b>15</b></div>
+        <div class="rule-badge rule-badge--teal">COMMON RECREATIONAL FORMAT</div>
+        <dl class="rule-list">
+          <dt>SERVICE</dt>
+          <dd>Players alternate serving <b>2 or 3 points</b> at a time (often agreed upon locally before starting).</dd>
+          <dt>DEUCE</dt>
+          <dd>If the score ties at <b>14–14</b>, serves alternate every <b>1 point</b> until someone wins by 2 points.</dd>
+        </dl>
+      </article>
+
+      <article class="rule-card">
+        <div class="rule-target">TO <b>21</b></div>
+        <div class="rule-badge rule-badge--magenta">OLD OFFICIAL RULE</div>
+        <dl class="rule-list">
+          <dt>SERVICE</dt>
+          <dd>Players alternate serving <b>5 points</b> at a time.</dd>
+          <dt>DEUCE</dt>
+          <dd>If the score ties at <b>20–20</b>, serves alternate every <b>1 point</b> until a 2-point lead is established.</dd>
+        </dl>
+      </article>
+    </div>
+
+    <div class="rules-callout">★ WHATEVER THE TARGET — WIN BY 2. ALWAYS. ★</div>
+    <div class="rules-cta">
+      <button class="btn btn-solid btn-lg" id="btnRulesToMatch">START A MATCH</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MATCH REFEREE PAGE ============ -->
+<section class="page page--match" id="matchPage" aria-hidden="true">
+  <div class="page-wipe" aria-hidden="true"></div>
+  <div class="page-deco" aria-hidden="true">
+    <div class="dots dots-m"></div>
+  </div>
+  <div class="page-inner">
+    <button class="page-back" data-back>← BACK TO BOARD</button>
+    <h2 class="page-title">MATCH <span>REFEREE</span></h2>
+
+    <div class="mode-bar" id="modeBar">
+      <div class="mode-group">
+        <span class="mode-label">GAME MODE</span>
+        <div class="mode-chips" id="targetChips">
+          <button class="mode-chip is-active" data-target="11">TO 11</button>
+          <button class="mode-chip" data-target="15">TO 15</button>
+          <button class="mode-chip" data-target="21">TO 21</button>
+        </div>
+      </div>
+      <div class="mode-group" id="serveGroup" hidden>
+        <span class="mode-label">SERVES EACH</span>
+        <div class="mode-chips" id="serveChips">
+          <button class="mode-chip is-active" data-serves="2">2</button>
+          <button class="mode-chip" data-serves="3">3</button>
+        </div>
+      </div>
+      <div class="mode-group">
+        <span class="mode-label">FIRST SERVE</span>
+        <div class="mode-chips" id="firstChips">
+          <button class="mode-chip is-active" data-first="0">LEFT</button>
+          <button class="mode-chip" data-first="1">RIGHT</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="court">
+      <div class="court-side" id="side0">
+        <select class="court-select" id="courtSel0" aria-label="Left player"></select>
+        <div class="court-photo-wrap">
+          <div class="court-photo" id="courtPhoto0"></div>
+          <div class="serve-chip" id="serveChip0" hidden>SERVING · <span>1/2</span></div>
+        </div>
+        <div class="court-score" id="courtScore0">0</div>
+        <div class="court-btns">
+          <button class="score-btn score-btn--minus" id="minus0" aria-label="Minus one point left">－</button>
+          <button class="score-btn score-btn--plus" id="plus0" aria-label="Plus one point left">＋</button>
+        </div>
+      </div>
+
+      <div class="court-mid">
+        <div class="vs-big">VS</div>
+        <div class="deuce-tag" id="deuceTag" hidden>DEUCE — WIN BY 2</div>
+        <div class="match-note" id="matchNote">Pick a player for each side.</div>
+        <button class="btn btn-ghost btn-sm" id="btnMatchReset">RESET GAME</button>
+      </div>
+
+      <div class="court-side" id="side1">
+        <select class="court-select" id="courtSel1" aria-label="Right player"></select>
+        <div class="court-photo-wrap">
+          <div class="court-photo" id="courtPhoto1"></div>
+          <div class="serve-chip" id="serveChip1" hidden>SERVING · <span>1/2</span></div>
+        </div>
+        <div class="court-score" id="courtScore1">0</div>
+        <div class="court-btns">
+          <button class="score-btn score-btn--minus" id="minus1" aria-label="Minus one point right">－</button>
+          <button class="score-btn score-btn--plus" id="plus1" aria-label="Plus one point right">＋</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="winner-overlay" id="winnerOverlay" hidden>
+      <div class="winner-card">
+        <div class="winner-kicker">GAME!</div>
+        <div class="winner-name" id="winnerName">—</div>
+        <div class="winner-sub">Result saved to the board. 🏓</div>
+        <div class="winner-actions">
+          <button class="btn btn-solid" id="btnRematch">REMATCH</button>
+          <button class="btn btn-ghost" data-back>BACK TO BOARD</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ MODALS ============ -->
 <div class="modal" id="modal" aria-hidden="true">
   <div class="modal-backdrop" data-close></div>
@@ -177,22 +322,6 @@
     </div>
   </div>
 
-  <div class="modal-card" id="modalMatch" hidden>
-    <h3 class="modal-title">RECORD MATCH</h3>
-    <label class="field">
-      <span>WINNER</span>
-      <select id="matchWinner"></select>
-    </label>
-    <div class="versus">VS</div>
-    <label class="field">
-      <span>LOSER</span>
-      <select id="matchLoser"></select>
-    </label>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" data-close>CANCEL</button>
-      <button class="btn btn-solid" id="matchConfirm">SETTLE IT</button>
-    </div>
-  </div>
 </div>
 
 <!-- ============ AUDIO DOCK ============ -->

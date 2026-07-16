@@ -216,7 +216,7 @@ let refreshSpotlight = () => {};
 if (!fineHover) {
   let hotEl = null;
   const updateSpotlight = () => {
-    if (profileOpen) return;
+    if (openOverlayName) return;
     const mid = window.innerHeight / 2;
     let best = null, bestDist = Infinity;
     boardEl.querySelectorAll(".banner").forEach((b) => {
@@ -266,30 +266,85 @@ function renderTicker() {
   });
 }
 
-/* ---------------- profile routing (real URLs, so back/swipe-back works) ----------------
-   Each profile lives at #/p/<playerId>. Opening a profile pushes a history
-   entry, so the browser/trackpad/phone back gesture returns to the board,
-   and a profile URL can be shared or reloaded directly. */
+/* ---------------- page routing (real URLs, so back/swipe-back works) ----------------
+   Profiles live at #/p/<playerId>, the rules page at #/rules, and the match
+   referee at #/match. Opening any of them pushes a history entry, so the
+   browser/trackpad/phone back gesture returns to the board, and every page
+   URL can be shared or reloaded directly. */
 const profileEl = document.getElementById("profile");
-const wipeEl = profileEl.querySelector(".profile-wipe");
 let currentProfileId = null;
-let profileOpen = false;
-let navigatedInternally = false; // true once the user opened a profile from the board
+let navigatedInternally = false; // true once the user navigated from within the site
 let routeReady = false;          // suppress routing until the intro reveal is done
+
+const OVERLAYS = {
+  profile: profileEl,
+  rules: document.getElementById("rulesPage"),
+  match: document.getElementById("matchPage"),
+};
+let openOverlayName = null;
+
+const overlayWipe = (el) => el.querySelector(".profile-wipe, .page-wipe");
+const overlayInner = (el) => el.querySelector(".profile-inner, .page-inner");
+
+function openOverlay(name) {
+  if (openOverlayName === name) return null;
+  if (openOverlayName) closeOverlayInstant();
+  const el = OVERLAYS[name];
+  openOverlayName = name;
+  el.classList.add("is-open");
+  el.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+  el.scrollTop = 0;
+  const tl = gsap.timeline();
+  tl.fromTo(overlayWipe(el), { x: 0, xPercent: -101 }, { xPercent: 0, duration: 0.42, ease: "power3.in" })
+    .set(overlayInner(el), { opacity: 1 })
+    .to(overlayWipe(el), { xPercent: 101, duration: 0.5, ease: "power3.out" });
+  return tl;
+}
+
+function closeOverlay() {
+  if (!openOverlayName) return;
+  const name = openOverlayName;
+  const el = OVERLAYS[name];
+  openOverlayName = null;
+  const tl = gsap.timeline({
+    onComplete: () => {
+      el.classList.remove("is-open");
+      el.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+      gsap.set(overlayInner(el), { clearProps: "opacity" });
+      if (name === "profile") currentProfileId = null;
+    },
+  });
+  tl.fromTo(overlayWipe(el), { x: 0, xPercent: -101 }, { xPercent: 0, duration: 0.38, ease: "power3.in" })
+    .set(overlayInner(el), { opacity: 0 })
+    .to(overlayWipe(el), { xPercent: 101, duration: 0.45, ease: "power3.out" });
+}
+
+function closeOverlayInstant() {
+  if (!openOverlayName) return;
+  const el = OVERLAYS[openOverlayName];
+  if (openOverlayName === "profile") currentProfileId = null;
+  openOverlayName = null;
+  el.classList.remove("is-open");
+  el.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
 
 const hashPlayerId = () => {
   const m = location.hash.match(/^#\/p\/(.+)$/);
   return m ? decodeURIComponent(m[1]) : null;
 };
 
-function navigateToProfile(id) {
+function navigateTo(hash) {
   navigatedInternally = true;
-  location.hash = "#/p/" + encodeURIComponent(id);
+  location.hash = hash;
 }
+const navigateToProfile = (id) => navigateTo("#/p/" + encodeURIComponent(id));
 
 function goBackToBoard() {
-  if (!profileOpen) return;
-  // if the user arrived from the board, real back keeps history clean;
+  if (!openOverlayName) return;
+  // if the user arrived from within the site, real back keeps history clean;
   // on a direct/deep link there is nowhere to go back to, so clear the hash
   if (navigatedInternally) history.back();
   else location.hash = "";
@@ -301,13 +356,17 @@ function route() {
   if (id) {
     const p = getPlayer(id);
     if (!p) { location.hash = ""; return; } // unknown/removed player
-    if (profileOpen) {
+    if (openOverlayName === "profile") {
       if (currentProfileId !== id) { currentProfileId = id; fillProfile(p); }
     } else {
       openProfile(id);
     }
+  } else if (location.hash === "#/rules") {
+    openOverlay("rules");
+  } else if (location.hash === "#/match") {
+    if (openOverlayName !== "match") { prepMatchPage(); openOverlay("match"); }
   } else {
-    closeProfile();
+    closeOverlay();
   }
 }
 window.addEventListener("hashchange", route);
@@ -345,21 +404,12 @@ function fillProfile(p) {
 
 function openProfile(id) {
   const p = getPlayer(id);
-  if (!p || profileOpen) return;
-  profileOpen = true;
+  if (!p) return;
   currentProfileId = id;
   fillProfile(p);
-
-  profileEl.classList.add("is-open");
-  profileEl.setAttribute("aria-hidden", "false");
-  document.body.style.overflow = "hidden";
-  profileEl.scrollTop = 0;
-
-  const tl = gsap.timeline();
-  tl.fromTo(wipeEl, { x: 0, xPercent: -101 }, { xPercent: 0, duration: 0.42, ease: "power3.in" })
-    .set(".profile-inner", { opacity: 1 })
-    .to(wipeEl, { xPercent: 101, duration: 0.5, ease: "power3.out" })
-    .from(".profile-back, .profile-rank", { opacity: 0, y: -18, duration: 0.4, stagger: 0.08 }, "-=0.35")
+  const tl = openOverlay("profile");
+  if (!tl) return;
+  tl.from(".profile-back, .profile-rank", { opacity: 0, y: -18, duration: 0.4, stagger: 0.08 }, "-=0.35")
     .from("#profileName .ch", {
       opacity: 0, y: 44, rotateX: -80, duration: 0.55, ease: "back.out(1.6)",
       stagger: { each: 0.022, from: "start" },
@@ -369,24 +419,8 @@ function openProfile(id) {
     .from("#profileBigname", { opacity: 0, y: 60, duration: 0.7, ease: "power3.out" }, "-=0.5");
 }
 
-function closeProfile() {
-  if (!profileOpen) return;
-  const tl = gsap.timeline({
-    onComplete: () => {
-      profileEl.classList.remove("is-open");
-      profileEl.setAttribute("aria-hidden", "true");
-      document.body.style.overflow = "";
-      gsap.set(".profile-inner", { clearProps: "opacity" });
-      profileOpen = false;
-      currentProfileId = null;
-    },
-  });
-  tl.fromTo(wipeEl, { x: 0, xPercent: -101 }, { xPercent: 0, duration: 0.38, ease: "power3.in" })
-    .set(".profile-inner", { opacity: 0 })
-    .to(wipeEl, { xPercent: 101, duration: 0.45, ease: "power3.out" });
-}
-
 document.getElementById("profileBack").addEventListener("click", goBackToBoard);
+document.querySelectorAll("[data-back]").forEach((el) => el.addEventListener("click", goBackToBoard));
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { goBackToBoard(); closeModal(); }
 });
@@ -445,17 +479,13 @@ document.getElementById("btnRemovePlayer").addEventListener("click", () => {
 /* ---------------- modals ---------------- */
 const modalEl = document.getElementById("modal");
 const modalAdd = document.getElementById("modalAdd");
-const modalMatch = document.getElementById("modalMatch");
 
-function openModal(which) {
-  modalAdd.hidden = which !== "add";
-  modalMatch.hidden = which !== "match";
+function openModal() {
+  modalAdd.hidden = false;
   modalEl.classList.add("is-open");
   modalEl.setAttribute("aria-hidden", "false");
-  const card = which === "add" ? modalAdd : modalMatch;
-  gsap.fromTo(card, { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.6)" });
-  if (which === "match") fillMatchSelects();
-  if (which === "add") document.getElementById("addName").focus();
+  gsap.fromTo(modalAdd, { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.6)" });
+  document.getElementById("addName").focus();
 }
 function closeModal() {
   modalEl.classList.remove("is-open");
@@ -463,8 +493,11 @@ function closeModal() {
 }
 modalEl.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
 
-document.getElementById("btnAdd").addEventListener("click", () => openModal("add"));
-document.getElementById("btnRecord").addEventListener("click", () => openModal("match"));
+document.getElementById("btnAdd").addEventListener("click", () => openModal());
+document.getElementById("btnRecord").addEventListener("click", () => navigateTo("#/match"));
+document.getElementById("btnRules").addEventListener("click", () => navigateTo("#/rules"));
+document.getElementById("btnRulesHero").addEventListener("click", () => navigateTo("#/rules"));
+document.getElementById("btnRulesToMatch").addEventListener("click", () => navigateTo("#/match"));
 
 document.getElementById("btnReset").addEventListener("click", () => {
   if (!confirm("Start a fresh week for everyone? Weekly W–L resets to 0 (all-time records are kept).")) return;
@@ -487,29 +520,187 @@ document.getElementById("addConfirm").addEventListener("click", async () => {
   closeModal();
 });
 
-/* record match */
-function fillMatchSelects() {
-  const opts = sorted()
+/* ---------------- match referee (#/match) ----------------
+   Live scoreboard with real service rotation and deuce rules:
+   - to 11: 2 serves each; from 10-10, 1 serve each
+   - to 15: 2 or 3 serves each (chosen); from 14-14, 1 serve each
+   - to 21: 5 serves each; from 20-20, 1 serve each
+   Win by 2, always. The result records to Firestore automatically. */
+const MATCH_BLOCKS = { 11: 2, 21: 5 }; // 15 uses the chosen 2 or 3
+const match = {
+  target: 11,
+  serves15: 2,
+  first: 0,            // side serving first: 0 = left, 1 = right
+  ids: [null, null],
+  score: [0, 0],
+  ended: false,
+  recorded: false,
+};
+
+const matchBlock = () => (match.target === 15 ? match.serves15 : MATCH_BLOCKS[match.target]);
+const matchStarted = () => match.score[0] + match.score[1] > 0;
+const matchReady = () => match.ids[0] && match.ids[1] && match.ids[0] !== match.ids[1];
+
+/* who serves the NEXT point, and which serve of their block it is */
+function serveInfo() {
+  const block = matchBlock();
+  const total = match.score[0] + match.score[1];
+  const deuceStart = 2 * (match.target - 1);
+  if (total >= deuceStart) {
+    // deuce: serves alternate every point, continuing the rotation sequence
+    const rotation = Math.floor((deuceStart - 1) / block) + (total - deuceStart) + 1;
+    return { side: (match.first + rotation) % 2, num: 1, of: 1, deuce: true };
+  }
+  return {
+    side: (match.first + Math.floor(total / block)) % 2,
+    num: (total % block) + 1,
+    of: block,
+    deuce: false,
+  };
+}
+
+function matchWinnerSide() {
+  const [a, b] = match.score;
+  if (Math.max(a, b) >= match.target && Math.abs(a - b) >= 2) return a > b ? 0 : 1;
+  return null;
+}
+
+function refreshMatchRoster() {
+  const opts = `<option value="">— PICK PLAYER —</option>` + sorted()
     .map((p) => `<option value="${p.id}">${esc(p.name)}</option>`)
     .join("");
-  document.getElementById("matchWinner").innerHTML = opts;
-  const loserSel = document.getElementById("matchLoser");
-  loserSel.innerHTML = opts;
-  if (loserSel.options.length > 1) loserSel.selectedIndex = 1;
+  [0, 1].forEach((s) => {
+    const sel = document.getElementById("courtSel" + s);
+    const prev = match.ids[s];
+    sel.innerHTML = opts;
+    if (prev && getPlayer(prev)) sel.value = prev;
+    else if (prev) { match.ids[s] = null; if (matchStarted()) resetGame(); }
+  });
 }
-document.getElementById("matchConfirm").addEventListener("click", () => {
-  const wId = document.getElementById("matchWinner").value;
-  const lId = document.getElementById("matchLoser").value;
-  if (!wId || !lId) return;
-  if (wId === lId) { alert("A player can't beat themselves (philosophically debatable, but no)."); return; }
+
+function renderMatch() {
+  const locked = matchStarted() || match.ended;
+  const info = serveInfo();
+  const ready = matchReady();
+
+  // mode chips reflect state and lock mid-game
+  document.getElementById("serveGroup").hidden = match.target !== 15;
+  document.querySelectorAll("#targetChips .mode-chip").forEach((c) =>
+    c.classList.toggle("is-active", +c.dataset.target === match.target));
+  document.querySelectorAll("#serveChips .mode-chip").forEach((c) =>
+    c.classList.toggle("is-active", +c.dataset.serves === match.serves15));
+  document.querySelectorAll("#firstChips .mode-chip").forEach((c) =>
+    c.classList.toggle("is-active", +c.dataset.first === match.first));
+  document.getElementById("modeBar").classList.toggle("is-locked", locked);
+
+  [0, 1].forEach((s) => {
+    const p = match.ids[s] ? getPlayer(match.ids[s]) : null;
+    const photo = document.getElementById("courtPhoto" + s);
+    photo.style.backgroundImage = p ? `url('${avatarFor(p)}')` : "none";
+    photo.classList.toggle("is-empty", !p);
+    document.getElementById("courtScore" + s).textContent = match.score[s];
+    document.getElementById("courtSel" + s).disabled = locked;
+
+    const serving = ready && !match.ended && info.side === s;
+    document.getElementById("courtPhoto" + s).parentElement.classList.toggle("is-serving", serving);
+    const chip = document.getElementById("serveChip" + s);
+    chip.hidden = !serving;
+    if (serving) chip.querySelector("span").textContent = info.deuce ? "DEUCE" : `${info.num}/${info.of}`;
+
+    document.getElementById("plus" + s).disabled = !ready || match.ended;
+    document.getElementById("minus" + s).disabled = !ready || match.ended || match.score[s] === 0;
+  });
+
+  document.getElementById("deuceTag").hidden = !(ready && !match.ended && info.deuce);
+
+  const note = document.getElementById("matchNote");
+  if (!match.ids[0] || !match.ids[1]) note.textContent = "Pick a player for each side.";
+  else if (match.ids[0] === match.ids[1]) note.textContent = "Pick two different players.";
+  else if (match.ended) note.textContent = "Game over — result saved.";
+  else note.textContent = `RACE TO ${match.target}`;
+
+  document.getElementById("winnerOverlay").hidden = !match.ended;
+  if (match.ended) {
+    const w = getPlayer(match.ids[matchWinnerSide()]);
+    document.getElementById("winnerName").textContent = w ? w.name.toUpperCase() : "—";
+  }
+}
+
+function resetGame() {
+  match.score = [0, 0];
+  match.ended = false;
+  match.recorded = false;
+  renderMatch();
+}
+
+function prepMatchPage() {
+  refreshMatchRoster();
+  if (match.ended) resetGame(); else renderMatch();
+}
+
+function recordMatchResult(winnerSide) {
+  if (match.recorded) return;
+  match.recorded = true;
+  const wId = match.ids[winnerSide];
+  const lId = match.ids[1 - winnerSide];
   guarded(async () => {
     const batch = writeBatch(db);
     batch.update(doc(db, "players", wId), { weekW: increment(1), allW: increment(1) });
     batch.update(doc(db, "players", lId), { weekL: increment(1), allL: increment(1) });
     await batch.commit();
   });
-  closeModal();
+}
+
+function scorePoint(side, delta) {
+  if (!matchReady() || match.ended) return;
+  match.score[side] = Math.max(0, match.score[side] + delta);
+  const w = matchWinnerSide();
+  if (w !== null) {
+    match.ended = true;
+    recordMatchResult(w);
+    const overlay = document.getElementById("winnerOverlay");
+    overlay.hidden = false;
+    gsap.fromTo(overlay.querySelector(".winner-card"),
+      { opacity: 0, y: 60, scale: 0.9 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "back.out(1.6)" });
+  } else if (delta > 0) {
+    gsap.fromTo("#courtScore" + side, { scale: 1.35 }, { scale: 1, duration: 0.4, ease: "power3.out" });
+  }
+  renderMatch();
+}
+
+[0, 1].forEach((s) => {
+  document.getElementById("plus" + s).addEventListener("click", () => scorePoint(s, 1));
+  document.getElementById("minus" + s).addEventListener("click", () => scorePoint(s, -1));
+  document.getElementById("courtSel" + s).addEventListener("change", (e) => {
+    match.ids[s] = e.target.value || null;
+    renderMatch();
+  });
 });
+
+document.getElementById("targetChips").addEventListener("click", (e) => {
+  const chip = e.target.closest("[data-target]");
+  if (!chip || matchStarted() || match.ended) return;
+  match.target = +chip.dataset.target;
+  renderMatch();
+});
+document.getElementById("serveChips").addEventListener("click", (e) => {
+  const chip = e.target.closest("[data-serves]");
+  if (!chip || matchStarted() || match.ended) return;
+  match.serves15 = +chip.dataset.serves;
+  renderMatch();
+});
+document.getElementById("firstChips").addEventListener("click", (e) => {
+  const chip = e.target.closest("[data-first]");
+  if (!chip || matchStarted() || match.ended) return;
+  match.first = +chip.dataset.first;
+  renderMatch();
+});
+document.getElementById("btnMatchReset").addEventListener("click", () => {
+  if (matchStarted() && !match.ended && !confirm("Reset the current game to 0–0?")) return;
+  resetGame();
+});
+document.getElementById("btnRematch").addEventListener("click", resetGame);
 
 /* ---------------- audio (personal preference — stays local per device) ---------------- */
 const bgm = document.getElementById("bgm");
@@ -711,12 +902,14 @@ function applyScrollMotion() {
 function onPlayersSnapshot(snap) {
   players = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   renderBoard();
-  if (profileOpen && currentProfileId) {
+  if (openOverlayName === "profile" && currentProfileId) {
     const p = getPlayer(currentProfileId);
     if (p) fillProfile(p);
     else if (hashPlayerId()) location.hash = ""; // player was removed remotely
-    else closeProfile();
+    else closeOverlay();
   }
+  refreshMatchRoster();
+  if (openOverlayName === "match") renderMatch();
 }
 
 async function boot() {
