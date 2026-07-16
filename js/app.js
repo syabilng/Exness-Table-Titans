@@ -6,8 +6,8 @@
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import {
-  getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc,
-  deleteDoc, onSnapshot, writeBatch, increment,
+  getFirestore, connectFirestoreEmulator, collection, doc, getDoc, getDocs,
+  addDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, increment,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -20,6 +20,10 @@ const firebaseConfig = {
 };
 const fbApp = initializeApp(firebaseConfig);
 const db = getFirestore(fbApp);
+// local development/testing against the Firestore emulator: open with ?emu=1
+if (new URLSearchParams(location.search).has("emu")) {
+  connectFirestoreEmulator(db, location.hostname, 8090);
+}
 const playersCol = collection(db, "players");
 const metaRef = doc(db, "leaderboard", "meta");
 
@@ -106,8 +110,13 @@ function statMarkup(label, w, l) {
   );
 }
 
+const COUNT_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven",
+  "Eight", "Nine", "Ten", "Eleven", "Twelve"];
+
 function renderBoard({ animate = false } = {}) {
   const list = sorted();
+  document.getElementById("heroCount").textContent =
+    COUNT_WORDS[list.length] || String(list.length);
   boardEl.innerHTML = "";
   list.forEach((p, i) => {
     const el = document.createElement("article");
@@ -130,6 +139,7 @@ function renderBoard({ animate = false } = {}) {
   });
   if (animate) animateBannersIn();
   renderTicker();
+  refreshSpotlight();
 }
 
 function animateBannersIn() {
@@ -182,10 +192,47 @@ function attachBannerInteractions(el) {
       rx(0); ry(0); lift(0); scale(1);
     });
   }
-  el.addEventListener("click", () => openProfile(el.dataset.id));
+  el.addEventListener("click", () => navigateToProfile(el.dataset.id));
   el.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openProfile(el.dataset.id); }
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigateToProfile(el.dataset.id); }
   });
+}
+
+/* ---------------- touch scroll spotlight ----------------
+   No hover on touch screens, so the glow travels with the scroll instead:
+   whichever banner sits closest to the middle of the screen is "hot". */
+let refreshSpotlight = () => {};
+if (!fineHover) {
+  let hotEl = null;
+  const updateSpotlight = () => {
+    if (profileOpen) return;
+    const mid = window.innerHeight / 2;
+    let best = null, bestDist = Infinity;
+    boardEl.querySelectorAll(".banner").forEach((b) => {
+      const r = b.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) return;
+      const d = Math.abs(r.top + r.height / 2 - mid);
+      if (d < bestDist) { bestDist = d; best = b; }
+    });
+    if (best !== hotEl) {
+      if (hotEl) hotEl.classList.remove("is-hot");
+      hotEl = best;
+      if (hotEl) {
+        hotEl.classList.add("is-hot");
+        hotEl.style.setProperty("--mx", "50%");
+        hotEl.style.setProperty("--my", "50%");
+      }
+    }
+  };
+  refreshSpotlight = () => { hotEl = null; updateSpotlight(); };
+  let ticking = false;
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { updateSpotlight(); ticking = false; });
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll, { passive: true });
 }
 
 /* ---------------- ticker ---------------- */
@@ -208,11 +255,51 @@ function renderTicker() {
   });
 }
 
-/* ---------------- profile overlay ---------------- */
+/* ---------------- profile routing (real URLs, so back/swipe-back works) ----------------
+   Each profile lives at #/p/<playerId>. Opening a profile pushes a history
+   entry, so the browser/trackpad/phone back gesture returns to the board,
+   and a profile URL can be shared or reloaded directly. */
 const profileEl = document.getElementById("profile");
 const wipeEl = profileEl.querySelector(".profile-wipe");
 let currentProfileId = null;
 let profileOpen = false;
+let navigatedInternally = false; // true once the user opened a profile from the board
+let routeReady = false;          // suppress routing until the intro reveal is done
+
+const hashPlayerId = () => {
+  const m = location.hash.match(/^#\/p\/(.+)$/);
+  return m ? decodeURIComponent(m[1]) : null;
+};
+
+function navigateToProfile(id) {
+  navigatedInternally = true;
+  location.hash = "#/p/" + encodeURIComponent(id);
+}
+
+function goBackToBoard() {
+  if (!profileOpen) return;
+  // if the user arrived from the board, real back keeps history clean;
+  // on a direct/deep link there is nowhere to go back to, so clear the hash
+  if (navigatedInternally) history.back();
+  else location.hash = "";
+}
+
+function route() {
+  if (!routeReady) return;
+  const id = hashPlayerId();
+  if (id) {
+    const p = getPlayer(id);
+    if (!p) { location.hash = ""; return; } // unknown/removed player
+    if (profileOpen) {
+      if (currentProfileId !== id) { currentProfileId = id; fillProfile(p); }
+    } else {
+      openProfile(id);
+    }
+  } else {
+    closeProfile();
+  }
+}
+window.addEventListener("hashchange", route);
 
 function fillProfile(p) {
   const rank = sorted().findIndex((x) => x.id === p.id) + 1;
@@ -288,9 +375,9 @@ function closeProfile() {
     .to(wipeEl, { xPercent: 101, duration: 0.45, ease: "power3.out" });
 }
 
-document.getElementById("profileBack").addEventListener("click", closeProfile);
+document.getElementById("profileBack").addEventListener("click", goBackToBoard);
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") { closeProfile(); closeModal(); }
+  if (e.key === "Escape") { goBackToBoard(); closeModal(); }
 });
 
 /* ---------------- photo upload (resized to keep it small) ---------------- */
@@ -340,7 +427,7 @@ document.getElementById("btnRemovePlayer").addEventListener("click", () => {
   const p = getPlayer(currentProfileId);
   if (!p) return;
   if (!confirm(`Remove ${p.name} from the league? This deletes their record.`)) return;
-  closeProfile();
+  goBackToBoard();
   guarded(() => deleteDoc(doc(db, "players", p.id)));
 });
 
@@ -585,7 +672,9 @@ function onPlayersSnapshot(snap) {
   renderBoard();
   if (profileOpen && currentProfileId) {
     const p = getPlayer(currentProfileId);
-    if (p) fillProfile(p); else closeProfile();
+    if (p) fillProfile(p);
+    else if (hashPlayerId()) location.hash = ""; // player was removed remotely
+    else closeProfile();
   }
 }
 
@@ -625,6 +714,8 @@ async function boot() {
       currentWeek = snap.data().week;
       document.getElementById("weekValue").textContent = currentWeek;
     });
+    routeReady = true;
+    route(); // honor a deep link like #/p/<id> on first load
   });
 }
 

@@ -3,9 +3,19 @@
    ============================================================ */
 
 @font-face {
-  font-family: "Archivo Black";
-  src: url("../assets/fonts/archivo-black-400.woff2") format("woff2");
+  font-family: "Ultra";
+  src: url("../assets/fonts/ultra-400.woff2") format("woff2");
   font-weight: 400; font-display: swap;
+}
+@font-face {
+  font-family: "Bodoni Moda";
+  src: url("../assets/fonts/bodoni-moda-600.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Bodoni Moda";
+  src: url("../assets/fonts/bodoni-moda-600-italic.woff2") format("woff2");
+  font-weight: 600; font-style: italic; font-display: swap;
 }
 @font-face {
   font-family: "Barlow Condensed";
@@ -29,7 +39,8 @@
   --ember-2: #ff9b3d;
   --ember-glow: rgba(255, 105, 40, 0.55);
   --steel: #2c3450;
-  --display: "Archivo Black", Impact, sans-serif;
+  --display: "Ultra", "Rockwell Extra Bold", serif;
+  --serif: "Bodoni Moda", "Didot", Georgia, serif;
   --cond: "Barlow Condensed", "Arial Narrow", sans-serif;
   --banner-h: 118px;
 }
@@ -97,7 +108,7 @@ body {
 }
 .pre-title {
   font-family: var(--display);
-  font-size: clamp(52px, 12vw, 150px);
+  font-size: clamp(38px, 9vw, 112px);
   line-height: 0.88; margin: 18px 0 26px;
   display: flex; flex-direction: column; align-items: center;
 }
@@ -133,7 +144,7 @@ body {
   box-shadow: 0 6px 24px rgba(255, 92, 31, 0.35);
 }
 .brand-text { display: flex; flex-direction: column; line-height: 1.05; }
-.brand-top { font-family: var(--display); font-size: 19px; letter-spacing: 0.04em; }
+.brand-top { font-family: var(--display); font-size: 16px; letter-spacing: 0.02em; }
 .brand-sub { font-weight: 700; font-size: 11px; letter-spacing: 0.34em; color: var(--ember-2); }
 
 .week-chip {
@@ -145,7 +156,7 @@ body {
   clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
 }
 .week-label { font-size: 10px; font-weight: 700; letter-spacing: 0.3em; color: var(--bone-dim); }
-.week-value { font-family: var(--display); font-size: 16px; color: var(--ember-2); }
+.week-value { font-family: var(--display); font-size: 14px; color: var(--ember-2); }
 
 .header-actions { display: flex; gap: 10px; }
 
@@ -198,7 +209,7 @@ body {
 }
 .hero-title {
   font-family: var(--display);
-  font-size: clamp(38px, 8.5vw, 108px);
+  font-size: clamp(30px, 7vw, 86px);
   line-height: 0.92;
   text-transform: uppercase;
 }
@@ -209,8 +220,9 @@ body {
   filter: drop-shadow(0 10px 40px rgba(255, 92, 31, 0.3));
 }
 .hero-sub {
-  margin-top: 16px; font-size: clamp(14px, 2vw, 18px); font-weight: 500;
-  letter-spacing: 0.12em; color: var(--bone-dim);
+  margin-top: 16px; font-size: clamp(15px, 2.2vw, 21px);
+  font-family: var(--serif); font-style: italic; font-weight: 600;
+  letter-spacing: 0.02em; color: var(--bone-dim);
 }
 
 /* ---------- leaderboard ---------- */
@@ -261,7 +273,7 @@ body {
 
 .b-rank {
   font-family: var(--display);
-  font-size: 44px; text-align: center;
+  font-size: 36px; text-align: center;
   color: transparent;
   -webkit-text-stroke: 1.5px rgba(242, 237, 226, 0.65);
   text-shadow: 0 0 24px rgba(255, 92, 31, 0.0);
@@ -285,7 +297,7 @@ body {
 .b-id { padding: 0 18px; min-width: 0; }
 .b-name {
   font-family: var(--display);
-  font-size: clamp(17px, 2.6vw, 26px);
+  font-size: clamp(14px, 2.1vw, 21px);
   letter-spacing: 0.02em; text-transform: uppercase;
   line-height: 1;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -368,9 +380,9 @@ body {
 .profile-name {
   margin-top: clamp(26px, 5vh, 56px);
   font-family: var(--display);
-  font-size: clamp(34px, 6.5vw, 84px);
-  line-height: 0.95; text-transform: uppercase;
-  letter-spacing: 0.14em;
+  font-size: clamp(26px, 5.2vw, 68px);
+  line-height: 1.02; text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--ember-2);
   text-shadow: 0 8px 44px rgba(255, 92, 31, 0.35);
   word-break: break-word;
@@ -411,6 +423,7 @@ body {
   font-size: 11px; font-weight: 700; letter-spacing: 0.34em; color: var(--ember-2);
   margin-bottom: 14px;
 }
+.rate-value { font-family: var(--display); }
 .stat-cols { display: flex; gap: 12px; }
 .stat-col {
   flex: 1; text-align: center;
@@ -419,7 +432,7 @@ body {
   padding: 12px 6px 14px;
 }
 .stat-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.3em; color: var(--bone-dim); margin-bottom: 8px; }
-.stat-num { font-family: var(--display); font-size: clamp(30px, 4.5vw, 46px); line-height: 1; }
+.stat-num { font-family: var(--display); font-size: clamp(26px, 4vw, 40px); line-height: 1; }
 
 .rate-bar { height: 10px; background: rgba(242, 237, 226, 0.1); overflow: hidden; }
 .rate-bar i {
@@ -455,7 +468,7 @@ body {
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.7);
 }
 .modal-title {
-  font-family: var(--display); font-size: 24px; letter-spacing: 0.06em;
+  font-family: var(--display); font-size: 20px; letter-spacing: 0.02em;
   color: var(--ember-2); margin-bottom: 22px;
 }
 .field { display: block; margin-bottom: 16px; }
@@ -527,6 +540,18 @@ body {
 }
 @keyframes pulse-hint { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
 
+/* ---------- touch scroll spotlight ---------- */
+@media (hover: none) {
+  .banner { transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.4s; }
+  .banner.is-hot {
+    transform: perspective(900px) translateZ(20px) scale(1.02);
+    border-color: rgba(255, 92, 31, 0.65);
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.6), 0 0 34px rgba(255, 92, 31, 0.22);
+    z-index: 2;
+  }
+  .banner.is-hot .b-rank { text-shadow: 0 0 24px rgba(255, 92, 31, 0.6); }
+}
+
 /* ---------- responsive ---------- */
 @media (max-width: 900px) {
   .site-header { flex-wrap: wrap; }
@@ -547,7 +572,7 @@ body {
   .b-rank { grid-area: rank; font-size: 26px; }
   .b-photo { grid-area: photo; width: 64px; height: 64px; }
   .b-id { grid-area: id; padding: 0 12px; align-self: end; }
-  .b-name { font-size: 16px; }
+  .b-name { font-size: 14px; }
   .b-tag { margin-top: 3px; font-size: 9px; }
   .b-stats { grid-area: stats; padding: 8px 12px 0; height: auto; }
   .b-stat { padding: 0 10px; min-width: 0; flex: 1; border-left: none; align-items: flex-start; }
