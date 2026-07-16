@@ -34,9 +34,15 @@ python3 -m http.server 8000
 - **Player cards** — tap any banner for a full-screen animated profile
   (diagonal wipe transition, letter-by-letter name reveal, counting stats,
   career win-rate bar).
-- **Record results** — "+ RECORD MATCH" picks a winner and loser and updates
-  weekly + all-time stats; per-player quick **+ WIN / + LOSS** buttons on the
-  profile card.
+- **Match referee** (`#/match`) — "RECORD MATCH" opens a live two-sided
+  scoreboard: pick a player per side, choose the game mode (to 11 / 15 / 21),
+  and score with big +/− buttons. Real service rotation (2 serves each for 11,
+  2 or 3 for 15, 5 for 21) with a glow + "SERVING n/m" chip on the server,
+  automatic deuce handling (alternate every point, win by 2), and the result
+  records to both players' weekly + all-time stats the moment the game ends.
+  Per-player quick **+ WIN / + LOSS** buttons remain on the profile card.
+- **House rules page** (`#/rules`) — scoring, service, and deuce rules for
+  the 11 / 15 / 21-point formats.
 - **Manage the roster** — "+ ADD PLAYER" (with optional photo), remove players
   from their profile card.
 - **Custom photos** — "CHANGE PHOTO" on any player card; images are resized
