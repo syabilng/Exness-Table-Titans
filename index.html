@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>PADDLE ROYALE — Inter-Dept Table Tennis Leaderboard</title>
-<meta name="description" content="Weekly table tennis leaderboard for inter-department matches.">
+<title>EXNESS PING PONG ALL-STARZ — Weekly Leaderboard</title>
+<meta name="description" content="Weekly table tennis leaderboard for the Exness Ping Pong All-Starz inter-department league.">
 <link rel="icon" type="image/png" href="assets/logo.png">
 <link rel="stylesheet" href="css/style.css">
 </head>
@@ -13,16 +13,14 @@
 <!-- ambient canvas background -->
 <canvas id="bg" aria-hidden="true"></canvas>
 
-<!-- film grain + scanline overlays -->
+<!-- film grain overlay -->
 <div class="grain" aria-hidden="true"></div>
-<div class="scanlines" aria-hidden="true"></div>
-<div class="vignette" aria-hidden="true"></div>
 
 <!-- ============ PRELOADER ============ -->
 <div id="preloader" aria-hidden="true">
   <div class="pre-inner">
-    <div class="pre-kicker">EST. BREAK ROOM &middot; SERVING SINCE FOREVER</div>
-    <h1 class="pre-title"><span>PADDLE</span><span>ROYALE</span></h1>
+    <div class="pre-kicker">EXNESS RECREATION LEAGUE PRESENTS</div>
+    <h1 class="pre-title"><span>PING PONG</span><span>ALL-STARZ</span></h1>
     <div class="pre-bar"><i></i></div>
     <div class="pre-sub">LOADING THIS WEEK'S CARNAGE</div>
   </div>
@@ -33,8 +31,8 @@
   <div class="brand">
     <img class="brand-mark" src="assets/logo.png" alt="Exness Ping Pong All-Starz logo">
     <div class="brand-text">
-      <span class="brand-top">PADDLE ROYALE</span>
-      <span class="brand-sub">INTER-DEPARTMENT TABLE TENNIS</span>
+      <span class="brand-top">PING PONG ALL-STARZ</span>
+      <span class="brand-sub">EXNESS INTER-DEPARTMENT LEAGUE</span>
     </div>
   </div>
   <div class="week-chip">
@@ -42,38 +40,80 @@
     <span class="week-value" id="weekValue">—</span>
   </div>
   <nav class="header-actions">
-    <button class="btn btn-ghost" id="btnRecord">＋ RECORD MATCH</button>
+    <button class="btn btn-solid" id="btnRecord">＋ RECORD MATCH</button>
     <button class="btn btn-ghost" id="btnAdd">＋ ADD PLAYER</button>
     <button class="btn btn-ghost btn-icon" id="btnReset" title="Reset weekly scores">⟲</button>
   </nav>
 </header>
 
-<!-- ============ TICKER ============ -->
-<div class="ticker" aria-hidden="true">
-  <div class="ticker-track" id="tickerTrack"></div>
-</div>
-
 <!-- ============ HERO ============ -->
-<section class="hero">
-  <h2 class="hero-title" id="heroTitle">
-    <span class="hero-line" data-line>THIS WEEK'S</span>
-    <span class="hero-line hero-line--accent" data-line>TOP PADDLERS</span>
-  </h2>
-  <p class="hero-sub" data-line><span id="heroCount">Nine</span> colleagues. One table. Zero mercy. Tap a banner for the full player card.</p>
+<section class="hero" id="hero">
+  <div class="hero-deco" aria-hidden="true">
+    <div class="dots dots-a" data-parallax="0.22"></div>
+    <div class="dots dots-b" data-parallax="-0.14"></div>
+    <div class="dots dots-c" data-parallax="0.1"></div>
+
+    <svg class="deco star-a" data-parallax="0.3" viewBox="0 0 60 60"><path d="M30 4 37 23 56 30 37 37 30 56 23 37 4 30 23 23Z" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+    <svg class="deco star-b" data-parallax="-0.24" viewBox="0 0 60 60"><path d="M30 2 36 24 58 30 36 36 30 58 24 36 2 30 24 24Z" fill="currentColor"/></svg>
+    <svg class="deco star-c" data-parallax="0.16" viewBox="0 0 60 60"><path d="M30 6l6 17 18 7-18 7-6 17-6-17-18-7 18-7z" fill="none" stroke="currentColor" stroke-width="4"/></svg>
+    <svg class="deco scribble-a" data-parallax="0.12" viewBox="0 0 220 60" fill="none"><path d="M6 44c26-24 38-26 30-8s10 16 32-6 36-20 28-2 8 18 30-4 38-22 30-4 6 20 28 0" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>
+    <svg class="deco scribble-b" data-parallax="-0.18" viewBox="0 0 220 60" fill="none"><path d="M8 30c30 -18 44 -18 60 0s34 18 60 0 42-18 60 0" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>
+
+    <div class="pball pball-1" data-parallax="0.26"><div class="pball-inner" data-spin="0.35"><svg viewBox="0 0 100 100"><defs><radialGradient id="pb1" cx="0.35" cy="0.3" r="0.9"><stop offset="0" stop-color="#ffffff"/><stop offset="0.55" stop-color="#F3EEDC"/><stop offset="1" stop-color="#c9bfa3"/></radialGradient></defs><circle cx="50" cy="50" r="48" fill="url(#pb1)"/><path d="M14 22 C46 44 54 62 50 96" fill="none" stroke="rgba(36,5,80,0.3)" stroke-width="4"/></svg></div></div>
+    <div class="pball pball-2" data-parallax="-0.2"><div class="pball-inner" data-spin="-0.28"><svg viewBox="0 0 100 100"><defs><radialGradient id="pb2" cx="0.35" cy="0.3" r="0.9"><stop offset="0" stop-color="#ffffff"/><stop offset="0.55" stop-color="#F3EEDC"/><stop offset="1" stop-color="#c9bfa3"/></radialGradient></defs><circle cx="50" cy="50" r="48" fill="url(#pb2)"/><path d="M20 84 C48 60 60 40 52 4" fill="none" stroke="rgba(36,5,80,0.3)" stroke-width="4"/></svg></div></div>
+    <div class="pball pball-3" data-parallax="0.14"><div class="pball-inner" data-spin="0.5"><svg viewBox="0 0 100 100"><defs><radialGradient id="pb3" cx="0.35" cy="0.3" r="0.9"><stop offset="0" stop-color="#ffffff"/><stop offset="0.55" stop-color="#F3EEDC"/><stop offset="1" stop-color="#c9bfa3"/></radialGradient></defs><circle cx="50" cy="50" r="48" fill="url(#pb3)"/><path d="M8 40 C40 46 72 40 94 28" fill="none" stroke="rgba(36,5,80,0.3)" stroke-width="4"/></svg></div></div>
+  </div>
+
+  <div class="hero-core">
+    <div class="hero-eyebrow" data-hero>EXNESS RECREATION LEAGUE ★ EVERY WEEK ★ ONE TABLE</div>
+    <h1 class="hero-stack">
+      <span class="hero-word hero-word--a" data-hero>PING PONG</span>
+      <span class="hero-word hero-word--b" data-hero>ALL-STARZ</span>
+    </h1>
+    <img class="hero-shield" src="assets/logo.png" alt="" data-hero data-parallax="-0.1">
+    <p class="hero-tag" data-hero>One table. Every department. Zero mercy.</p>
+    <div class="hero-ctas" data-hero>
+      <button class="btn btn-solid btn-lg" id="btnToBoard">SEE THE BOARD ↓</button>
+    </div>
+  </div>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track" id="tickerTrack"></div>
+  </div>
 </section>
 
-<!-- ============ LEADERBOARD ============ -->
-<main class="board" id="board" aria-label="Weekly leaderboard"></main>
+<!-- ============ BOARD SECTION ============ -->
+<section class="board-area" id="boardArea">
+  <div class="board-deco" aria-hidden="true">
+    <div class="dots dots-d" data-parallax="0.12"></div>
+    <svg class="deco star-d" data-parallax="0.2" viewBox="0 0 60 60"><path d="M30 4 37 23 56 30 37 37 30 56 23 37 4 30 23 23Z" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+    <div class="pball pball-4" data-parallax="0.18"><div class="pball-inner" data-spin="-0.4"><svg viewBox="0 0 100 100"><defs><radialGradient id="pb4" cx="0.35" cy="0.3" r="0.9"><stop offset="0" stop-color="#ffffff"/><stop offset="0.55" stop-color="#F3EEDC"/><stop offset="1" stop-color="#c9bfa3"/></radialGradient></defs><circle cx="50" cy="50" r="48" fill="url(#pb4)"/><path d="M14 22 C46 44 54 62 50 96" fill="none" stroke="rgba(36,5,80,0.3)" stroke-width="4"/></svg></div></div>
+  </div>
+
+  <div class="board-intro">
+    <h2 class="board-title">
+      <span class="hero-line">THIS WEEK'S</span>
+      <span class="hero-line hero-line--accent">TOP TITANS</span>
+    </h2>
+    <p class="hero-sub"><span id="heroCount">Nine</span> colleagues. One table. Zero mercy. Tap a banner for the full player card.</p>
+  </div>
+
+  <main class="board" id="board" aria-label="Weekly leaderboard"></main>
+</section>
 
 <footer class="site-footer">
   <span>POWERED BY BREAK-ROOM RIVALRY</span>
-  <span class="foot-dot">●</span>
+  <span class="foot-dot">★</span>
   <span>ALL STATS SETTLED AT THE TABLE</span>
 </footer>
 
 <!-- ============ PLAYER PROFILE OVERLAY ============ -->
 <section class="profile" id="profile" aria-hidden="true">
   <div class="profile-wipe" aria-hidden="true"></div>
+  <div class="profile-deco" aria-hidden="true">
+    <div class="dots dots-p"></div>
+    <svg class="deco star-p" viewBox="0 0 60 60"><path d="M30 4 37 23 56 30 37 37 30 56 23 37 4 30 23 23Z" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+  </div>
   <div class="profile-inner">
     <button class="profile-back" id="profileBack">← BACK TO BOARD</button>
     <div class="profile-rank" id="profileRank">#1</div>
