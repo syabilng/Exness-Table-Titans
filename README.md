@@ -68,7 +68,7 @@ bundled generated ambient loop (`assets/music-loop.wav`).
 - [Firebase Firestore](https://firebase.google.com/docs/firestore) (loaded
   from Google's official CDN) for shared, real-time player data
 - Canvas 2D ambient background (drifting embers + perspective court lines)
-- Fonts vendored locally (Spaceland Eight Oblique for display, Barlow Condensed for labels)
+- Fonts vendored locally (Spaceland Eight Oblique for display; Garamond for the board sub-line)
 
 ## Shared data (Firestore)
 
