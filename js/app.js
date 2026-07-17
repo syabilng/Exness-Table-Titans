@@ -9,6 +9,7 @@ import {
   getFirestore, connectFirestoreEmulator, collection, doc, getDoc, getDocs,
   addDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, increment,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+import * as THREE from "./vendor/three.module.min.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAWVqJ9ifrEiYI1TNdigTcj-hXNQx5L3TI",
@@ -44,8 +45,11 @@ const SEED_PLAYERS = [
   { name: "Alif Ismail",          weekW: 1, weekL: 5, allW: 14, allL: 30 },
 ];
 
-function isoWeek(d = new Date()) {
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+/* ISO week computed on Malaysia time (UTC+8, no DST), so the weekly
+   scores roll over every Monday at 12:00am MYT for everyone. */
+function isoWeek(now = new Date()) {
+  const kl = new Date(now.getTime() + 8 * 3600e3); // shift clock to UTC+8
+  const date = new Date(Date.UTC(kl.getUTCFullYear(), kl.getUTCMonth(), kl.getUTCDate()));
   const dayNum = date.getUTCDay() || 7;
   date.setUTCDate(date.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
@@ -495,13 +499,22 @@ document.getElementById("btnRemovePlayer").addEventListener("click", () => {
 /* ---------------- modals ---------------- */
 const modalEl = document.getElementById("modal");
 const modalAdd = document.getElementById("modalAdd");
+const modalPin = document.getElementById("modalPin");
 
-function openModal() {
-  modalAdd.hidden = false;
+function openModal(which = "add") {
+  modalAdd.hidden = which !== "add";
+  modalPin.hidden = which !== "pin";
   modalEl.classList.add("is-open");
   modalEl.setAttribute("aria-hidden", "false");
-  gsap.fromTo(modalAdd, { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.6)" });
-  document.getElementById("addName").focus();
+  const card = which === "add" ? modalAdd : modalPin;
+  gsap.fromTo(card, { opacity: 0, y: 40, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.6)" });
+  if (which === "add") document.getElementById("addName").focus();
+  if (which === "pin") {
+    document.getElementById("pinError").hidden = true;
+    const inp = document.getElementById("pinInput");
+    inp.value = "";
+    inp.focus();
+  }
 }
 function closeModal() {
   modalEl.classList.remove("is-open");
@@ -509,15 +522,60 @@ function closeModal() {
 }
 modalEl.querySelectorAll("[data-close]").forEach((el) => el.addEventListener("click", closeModal));
 
-document.getElementById("btnAdd").addEventListener("click", () => openModal());
+document.getElementById("btnAdd").addEventListener("click", () => openModal("add"));
 document.getElementById("btnRecord").addEventListener("click", () => navigateTo("#/match"));
 document.getElementById("btnRules").addEventListener("click", () => navigateTo("#/rules"));
 document.getElementById("btnRulesHero").addEventListener("click", () => navigateTo("#/rules"));
 document.getElementById("btnRulesToMatch").addEventListener("click", () => navigateTo("#/match"));
 
-document.getElementById("btnReset").addEventListener("click", () => {
-  if (!confirm("Start a fresh week for everyone? Weekly W–L resets to 0 (all-time records are kept).")) return;
-  guarded(resetWeek);
+/* ---------------- footer nav + PIN-guarded full reset ---------------- */
+document.getElementById("footBoard").addEventListener("click", (e) => {
+  e.preventDefault();
+  boardArea.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+document.getElementById("footAdd").addEventListener("click", (e) => {
+  e.preventDefault();
+  openModal("add");
+});
+document.querySelectorAll("[data-nav]").forEach((a) =>
+  a.addEventListener("click", () => { navigatedInternally = true; }));
+
+document.getElementById("footResetData").addEventListener("click", (e) => {
+  e.preventDefault();
+  openModal("pin");
+});
+
+// sha-256 of the security PIN; the PIN itself never appears in the code
+const RESET_PIN_HASH = "7a5df5ffa0dec2228d90b8d0a0f1b0767b748b0a41314c123075b8289e4e053f";
+
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function resetAllData() {
+  const batch = writeBatch(db);
+  players.forEach((p) =>
+    batch.update(doc(db, "players", p.id), { weekW: 0, weekL: 0, allW: 0, allL: 0 }));
+  batch.set(metaRef, { week: isoWeek() }, { merge: true });
+  await batch.commit();
+}
+
+document.getElementById("pinConfirm").addEventListener("click", async () => {
+  const inp = document.getElementById("pinInput");
+  const err = document.getElementById("pinError");
+  const hash = await sha256Hex(inp.value.trim());
+  if (hash !== RESET_PIN_HASH) {
+    err.hidden = false;
+    inp.value = "";
+    gsap.fromTo(modalPin, { x: -8 }, { x: 0, duration: 0.4, ease: "elastic.out(1.2, 0.3)" });
+    return;
+  }
+  await guarded(resetAllData);
+  closeModal();
+});
+document.getElementById("pinInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") document.getElementById("pinConfirm").click();
 });
 
 /* add player */
@@ -862,7 +920,8 @@ function playIntroReveal() {
     .set("#preloader", { display: "none" })
     .from(".site-header", { opacity: 0, y: -24, duration: 0.5 }, "-=0.55")
     .from("[data-hero]", { opacity: 0, y: 36, duration: 0.6, ease: "power3.out", stagger: 0.09 }, "-=0.35")
-    .from(".hero-deco > *", { opacity: 0, scale: 0.5, duration: 0.7, ease: "back.out(1.7)", stagger: 0.05 }, "-=0.6")
+    .from("#logo3dInner", { rotationY: -150, scale: 0.35, duration: 1.15, ease: "back.out(1.3)" }, "-=0.7")
+    .from(".hero-deco > *", { opacity: 0, scale: 0.5, duration: 0.7, ease: "back.out(1.7)", stagger: 0.05 }, "-=0.9")
     .from(".ticker", { yPercent: 100, opacity: 0, duration: 0.5, ease: "power3.out" }, "-=0.45");
   return tl;
 }
@@ -891,10 +950,8 @@ document.getElementById("btnToBoard").addEventListener("click", () => {
   boardArea.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
-/* ---------------- parallax + scroll-spun ping pong balls ---------------- */
+/* ---------------- parallax decorations ---------------- */
 const parallaxEls = [...document.querySelectorAll("[data-parallax]")];
-const spin3dEls = [...document.querySelectorAll("[data-spin3d]")];
-const burstEl = document.querySelector("[data-burst]");
 let parallaxActive = false;
 
 function applyScrollMotion() {
@@ -902,22 +959,158 @@ function applyScrollMotion() {
   parallaxEls.forEach((el) => {
     el.style.transform = `translateY(${(y * parseFloat(el.dataset.parallax)).toFixed(1)}px)`;
   });
-  // ping pong ball decals tumble on a 3D axis with the scroll
-  spin3dEls.forEach((el) => {
-    el.style.transform = `rotate3d(0.45, 1, 0.12, ${(y * parseFloat(el.dataset.spin3d)).toFixed(1)}deg)`;
-  });
-  // the hero speed-line burst spins and zooms along its own lines
-  if (burstEl) {
-    const s = 1 + Math.min(y, 3000) * 0.00025;
-    burstEl.style.transform = `rotate(${(y * 0.025).toFixed(2)}deg) scale(${s.toFixed(4)})`;
+}
+
+/* ---------------- Three.js ping pong balls (logo printed ON the ball) ----------------
+   Real textured spheres: the ex logo is stamped into an equirectangular
+   canvas texture, so it visibly curves around the ball as scroll rotates it. */
+const ballStates = [];
+window.__ballSpin = 0; // test hook: current shared rotation offset
+
+function makeBallTexture(logoImg) {
+  const c = document.createElement("canvas");
+  c.width = 1024; c.height = 512;
+  const g = c.getContext("2d");
+  g.fillStyle = "#FCFADD";
+  g.fillRect(0, 0, c.width, c.height);
+  // two stamps on opposite hemispheres, like a real celluloid ball
+  const lw = 300, lh = lw * (logoImg.height / logoImg.width);
+  g.globalAlpha = 0.92;
+  g.drawImage(logoImg, 256 - lw / 2, 256 - lh / 2, lw, lh);
+  g.drawImage(logoImg, 768 - lw / 2, 256 - lh / 2, lw, lh);
+  g.globalAlpha = 1;
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function initBalls() {
+  const logoImg = new Image();
+  logoImg.src = "assets/ex_logo.png";
+  logoImg.onload = () => {
+    const texture = makeBallTexture(logoImg);
+    document.querySelectorAll(".pball").forEach((holder) => {
+      const canvas = holder.querySelector(".pball-gl");
+      if (!canvas) return;
+      try {
+        const size = holder.getBoundingClientRect().width || 100;
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+        renderer.setSize(size, size, false);
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 10);
+        camera.position.z = 3.6;
+        scene.add(new THREE.AmbientLight(0xffffff, 1.35));
+        const key = new THREE.DirectionalLight(0xfff6da, 2.2);
+        key.position.set(-1.4, 1.8, 2.4);
+        scene.add(key);
+        const rim = new THREE.DirectionalLight(0x7c32b5, 0.9);
+        rim.position.set(2, -1.2, -1.5);
+        scene.add(rim);
+        const mesh = new THREE.Mesh(
+          new THREE.SphereGeometry(1, 48, 48),
+          new THREE.MeshStandardMaterial({ map: texture, roughness: 0.55, metalness: 0.02 })
+        );
+        mesh.rotation.z = 0.28; // tilt the roll axis so the stamp arcs naturally
+        scene.add(mesh);
+        ballStates.push({ holder, renderer, scene, camera, mesh, k: parseFloat(holder.dataset.ballspin) || 0.01 });
+      } catch (e) { /* no WebGL — ball stays empty, decorations only */ }
+    });
+  };
+}
+initBalls();
+
+function renderBalls(t) {
+  const y = window.scrollY;
+  window.__ballSpin = y;
+  for (const b of ballStates) {
+    const r = b.holder.getBoundingClientRect();
+    if (r.bottom < -60 || r.top > innerHeight + 60) continue;
+    b.mesh.rotation.y = y * b.k + t * 0.00012;          // scroll roll + slow idle
+    b.mesh.rotation.x = Math.sin(t * 0.0004 + b.k * 90) * 0.16;
+    b.renderer.render(b.scene, b.camera);
   }
-  // banner photos float against their slabs
-  document.querySelectorAll(".board .b-photo").forEach((ph) => {
-    const r = ph.parentElement.getBoundingClientRect();
-    if (r.bottom < -100 || r.top > innerHeight + 100) return;
-    const off = (r.top + r.height / 2 - innerHeight / 2) * -0.05;
-    ph.style.transform = `translateY(${off.toFixed(1)}px)`;
+}
+
+/* ---------------- hero speed lines (drawn in code, rush to the center) ---------------- */
+const linesCanvas = document.getElementById("heroLines");
+const linesCtx = linesCanvas.getContext("2d");
+const LINES = [];
+let linesW = 0, linesH = 0, linesDpr = 1;
+let lastScrollY = window.scrollY;
+let scrollVel = 0;
+
+function sizeLines() {
+  const hero = document.getElementById("hero");
+  linesDpr = Math.min(2, window.devicePixelRatio || 1);
+  linesW = linesCanvas.width = Math.round(hero.clientWidth * linesDpr);
+  linesH = linesCanvas.height = Math.round(hero.clientHeight * linesDpr);
+}
+sizeLines();
+window.addEventListener("resize", sizeLines);
+
+const LINE_TINTS = ["214, 211, 216", "102, 210, 208", "124, 50, 181", "248, 113, 46"];
+for (let i = 0; i < 150; i++) {
+  LINES.push({
+    ang: Math.random() * Math.PI * 2,
+    d: 0.12 + Math.random() * 0.95,     // distance from center (1 = corner)
+    len: 0.05 + Math.random() * 0.1,
+    speed: 0.0006 + Math.random() * 0.0014,
+    w: 0.6 + Math.random() * 1.6,
+    tint: LINE_TINTS[(Math.random() * LINE_TINTS.length) | 0],
   });
+}
+
+function drawLines() {
+  linesCtx.clearRect(0, 0, linesW, linesH);
+  const cx = linesW / 2, cy = linesH * 0.44;
+  const maxR = Math.hypot(linesW, linesH) / 2;
+  // scroll speed feeds the warp: lines rush to the center as you scroll
+  const boost = 1 + Math.min(Math.abs(scrollVel), 60) * 0.5;
+  linesCtx.lineCap = "round";
+  for (const l of LINES) {
+    l.d -= l.speed * boost;
+    if (l.d < 0.06) { l.d = 1.05; l.ang = Math.random() * Math.PI * 2; }
+    const r0 = l.d * maxR, r1 = Math.min((l.d + l.len * boost * 0.8) * maxR, maxR * 1.1);
+    const cos = Math.cos(l.ang), sin = Math.sin(l.ang);
+    const fade = Math.min(1, (l.d - 0.06) * 3) * Math.min(1, (1.05 - l.d) * 4);
+    linesCtx.strokeStyle = `rgba(${l.tint}, ${(0.05 + 0.3 * l.d) * fade})`;
+    linesCtx.lineWidth = l.w * linesDpr * (0.5 + l.d);
+    linesCtx.beginPath();
+    linesCtx.moveTo(cx + cos * r0, cy + sin * r0);
+    linesCtx.lineTo(cx + cos * r1, cy + sin * r1);
+    linesCtx.stroke();
+  }
+  scrollVel *= 0.9; // decay
+}
+
+/* ---------------- 3D floating logo ---------------- */
+function startLogoFloat() {
+  if (reduceMotion) return;
+  const inner = document.getElementById("logo3dInner");
+  gsap.to(inner, {
+    rotationY: 13, rotationX: -9, y: -12,
+    duration: 3.4, ease: "sine.inOut", yoyo: true, repeat: -1,
+  });
+  if (fineHover) {
+    const rx = gsap.quickTo(inner, "rotationX", { duration: 0.9, ease: "power2.out" });
+    const ry = gsap.quickTo(inner, "rotationY", { duration: 0.9, ease: "power2.out" });
+    document.getElementById("hero").addEventListener("pointermove", (e) => {
+      ry(((e.clientX / innerWidth) - 0.5) * 26);
+      rx(((0.5 - e.clientY / innerHeight)) * 18);
+    });
+  }
+}
+
+/* one shared animation loop: speed lines + balls (skipped under reduced motion) */
+function motionLoop(t) {
+  const y = window.scrollY;
+  scrollVel += (y - lastScrollY) * 0.15;
+  lastScrollY = y;
+  const heroRect = document.getElementById("hero").getBoundingClientRect();
+  if (heroRect.bottom > 0) drawLines();
+  renderBalls(t);
+  requestAnimationFrame(motionLoop);
 }
 
 /* header logo appears only after the hero (with its big logo) scrolls away */
@@ -988,6 +1181,9 @@ async function boot() {
     route(); // honor a deep link like #/p/<id> on first load
     parallaxActive = !reduceMotion;
     if (parallaxActive) applyScrollMotion();
+    startLogoFloat();
+    if (!reduceMotion) requestAnimationFrame(motionLoop);
+    else { drawLines(); renderBalls(0); } // one static frame
     tryRevealBoard(); // in case the board is already in view
   });
 }

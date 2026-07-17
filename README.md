@@ -20,9 +20,11 @@ python3 -m http.server 8000
 
 ## Features
 
-- **Poster hero** — full-screen intro with the club shield, giant display
-  type, parallax halftone/star/scribble decorations, and ping pong balls that
-  spin with the scroll; the leaderboard section reveals as you scroll to it.
+- **Poster hero** — full-screen intro built around the 3D floating club
+  crest (layered-depth entrance, perpetual float, pointer tilt), code-drawn
+  speed lines that rush toward the center as you scroll, parallax
+  decorations, and Three.js ping pong balls with the ex logo printed on the
+  sphere, rolling with the scroll; the leaderboard reveals on scroll.
 - **Weekly leaderboard banners** — rank, photo, This-Week W–L and All-Time W–L
   for every player, sorted by weekly wins. Auto-resets weekly stats when a new
   ISO week starts (all-time records are kept), plus a manual ⟲ reset button.
@@ -60,6 +62,7 @@ bundled generated ambient loop (`assets/music-loop.wav`).
 ## Stack
 
 - Vanilla HTML/CSS/JS (`js/app.js` is loaded as an ES module)
+- [Three.js](https://threejs.org) (vendored) for the textured ping pong balls
 - [GSAP 3](https://gsap.com) (vendored at `js/vendor/gsap.min.js`) for all
   animation
 - [Firebase Firestore](https://firebase.google.com/docs/firestore) (loaded
@@ -98,6 +101,15 @@ rules above to keep the site working indefinitely.
 Because writes use Firestore's atomic `increment()` and batched writes,
 concurrent edits (two people clicking "+1 win" at once) resolve safely
 without one overwriting the other.
+
+## Weekly + full resets
+
+- Weekly W–L auto-resets every **Monday 12:00am Malaysia time** (the week id
+  is computed on UTC+8, so the rollover happens for everyone at once).
+- A discreet **Reset Data** link in the footer wipes every score (weekly and
+  all-time) after a security PIN. Only the SHA-256 hash of the PIN lives in
+  the code. Note: this is a courtesy gate, not real security — the site has
+  no accounts, so anyone technical could still write to the database.
 
 ## Notes
 
