@@ -10,6 +10,12 @@
        url("../assets/fonts/Spaceland-EightOblique.otf") format("opentype");
   font-weight: 400; font-display: swap;
 }
+@font-face {
+  font-family: "Garamond";
+  src: url("../assets/fonts/garamond.woff2") format("woff2"),
+       url("../assets/fonts/garamond-clean.ttf") format("truetype");
+  font-weight: 400; font-display: swap;
+}
 
 :root {
   /* palette */
@@ -28,8 +34,17 @@
   --shade-c: #280F5A;  /* pairs with brick  */
   /* the single font — used as-is, no tracking anywhere */
   --font: "Spaceland", "Arial Narrow", sans-serif;
+  --serif: "Garamond", "EB Garamond", Georgia, serif;
   --display: var(--font);
   --cond: var(--font);
+  --title-main: #E0DEE3;
+  --title-shade: #260B5C;
+  /* shallow, continuous 1px-step extrude that sits right under the title */
+  --title-extrude:
+    1px 1px 0 var(--title-shade), 2px 2px 0 var(--title-shade),
+    3px 3px 0 var(--title-shade), 4px 4px 0 var(--title-shade),
+    5px 5px 0 var(--title-shade), 6px 6px 0 var(--title-shade),
+    7px 7px 0 var(--title-shade);
   /* shared horizontal rhythm */
   --pad-x: clamp(16px, 4vw, 48px);
   /* banner extrusion depth */
@@ -66,11 +81,12 @@ body {
 .grunge {
   position: fixed; inset: 0; z-index: 60;
   pointer-events: none;
-  background-image: url("../assets/grunge-tile.jpg");
+  background-image: url("../assets/grunge2-tile.jpg");
   background-repeat: repeat;
-  background-size: clamp(300px, 32vw, 460px);
+  /* tile scales with the viewport */
+  background-size: min(58vw, 720px);
   mix-blend-mode: overlay;
-  opacity: 0.38;
+  opacity: 0.42;
 }
 
 .deco { position: absolute; pointer-events: none; }
@@ -267,24 +283,37 @@ body {
 .board-deco { position: absolute; inset: 0; pointer-events: none; }
 .star-d { color: var(--violet); width: 44px; top: 70px; left: 6%; }
 
-.board-intro { text-align: center; padding: 0 var(--pad-x) clamp(34px, 5vh, 60px); position: relative; z-index: 2; }
+.board-intro {
+  text-align: center; padding: 0 var(--pad-x) clamp(34px, 5vh, 60px);
+  position: relative; z-index: 2;
+  perspective: 900px;
+}
+/* 3D floaty title stage (GSAP tilts this) with projector rays behind */
+.title3d {
+  position: relative; display: inline-block;
+  transform-style: preserve-3d; will-change: transform;
+}
+.title-rays {
+  position: absolute; left: 50%; top: 46%;
+  width: 165%; height: 280%;
+  transform: translate(-50%, -50%) translateZ(-60px);
+  z-index: 0; pointer-events: none;
+  mix-blend-mode: screen;
+}
 .board-title {
+  position: relative; z-index: 2;
   font-family: var(--font);
   line-height: 0.98;
   text-transform: uppercase;
 }
-.hero-line { display: block; }
-.board-title .hero-line {
-  font-size: clamp(26px, 4vw, 58px);
-  color: var(--teal); text-shadow: 5px 5px 0 var(--shade-a);
-}
-.board-title .hero-line--accent {
-  font-size: clamp(54px, 9vw, 132px);
-  color: var(--violet); text-shadow: 8px 8px 0 var(--orange);
-}
+.hero-line { display: block; color: var(--title-main); text-shadow: var(--title-extrude); }
+.board-title .hero-line { font-size: clamp(26px, 4vw, 58px); }
+.board-title .hero-line--accent { font-size: clamp(54px, 9vw, 132px); }
 .hero-sub {
-  margin-top: 20px; font-size: clamp(14px, 1.8vw, 19px);
-  color: var(--silver-dim); text-transform: uppercase;
+  margin-top: 22px; font-size: clamp(17px, 2.1vw, 23px);
+  font-family: var(--serif);
+  color: var(--silver-dim);
+  font-style: italic;
 }
 
 /* pre-reveal: board content stays hidden until scrolled into view (JS reveals) */

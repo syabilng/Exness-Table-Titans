@@ -937,9 +937,12 @@ function tryRevealBoard() {
   boardRevealed = true;
   boardArea.classList.add("is-revealed");
   gsap.from(".board-title .hero-line", { yPercent: 120, opacity: 0, duration: 0.7, ease: "power3.out", stagger: 0.12 });
+  gsap.from(".title-rays", { opacity: 0, scale: 0.6, duration: 1.1, ease: "power2.out" });
   gsap.from(".board-intro .hero-sub", { opacity: 0, y: 18, duration: 0.5, delay: 0.3 });
   animateBannersIn();
   gsap.from(".site-footer", { opacity: 0, duration: 0.6, delay: 0.8 });
+  sizeRays();
+  startTitleFloat();
 }
 
 new IntersectionObserver((entries) => {
@@ -1102,7 +1105,82 @@ function startLogoFloat() {
   }
 }
 
-/* one shared animation loop: speed lines + balls (skipped under reduced motion) */
+/* ---------------- section title: projector light rays + GSAP float ----------------
+   Volumetric beams fan out from behind the title; the title text sits on
+   top so the rays glow through the hollow counters of the letters. */
+const raysCanvas = document.getElementById("titleRays");
+const raysCtx = raysCanvas ? raysCanvas.getContext("2d") : null;
+let raysW = 0, raysH = 0, raysDpr = 1;
+const BEAMS = [];
+for (let i = 0; i < 26; i++) {
+  BEAMS.push({
+    a: (i / 26) * Math.PI * 2,
+    half: 0.03 + Math.random() * 0.05,
+    tint: ["224, 222, 227", "102, 210, 208", "248, 113, 46"][i % 3],
+    ph: Math.random() * Math.PI * 2,
+    sp: 0.6 + Math.random() * 0.8,
+  });
+}
+
+function sizeRays() {
+  if (!raysCanvas) return;
+  raysDpr = Math.min(2, window.devicePixelRatio || 1);
+  const r = raysCanvas.getBoundingClientRect();
+  raysW = raysCanvas.width = Math.max(2, Math.round(r.width * raysDpr));
+  raysH = raysCanvas.height = Math.max(2, Math.round(r.height * raysDpr));
+}
+
+function drawRays(t) {
+  if (!raysCtx) return;
+  if (raysW < 2) sizeRays();
+  raysCtx.clearRect(0, 0, raysW, raysH);
+  const cx = raysW / 2, cy = raysH * 0.5;
+  const R = Math.hypot(raysW, raysH) * 0.62;
+  // soft projector bulb behind the title
+  const glow = raysCtx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.6);
+  glow.addColorStop(0, "rgba(224, 222, 227, 0.32)");
+  glow.addColorStop(0.5, "rgba(124, 50, 181, 0.14)");
+  glow.addColorStop(1, "rgba(124, 50, 181, 0)");
+  raysCtx.fillStyle = glow;
+  raysCtx.fillRect(0, 0, raysW, raysH);
+  // rotating volumetric beams, additive
+  raysCtx.globalCompositeOperation = "lighter";
+  const spin = t * 0.00006;
+  for (const b of BEAMS) {
+    const a = b.a + spin;
+    const flick = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 0.001 * b.sp + b.ph));
+    const g = raysCtx.createLinearGradient(cx, cy, cx + Math.cos(a) * R, cy + Math.sin(a) * R);
+    g.addColorStop(0, `rgba(${b.tint}, ${0.16 * flick})`);
+    g.addColorStop(1, `rgba(${b.tint}, 0)`);
+    raysCtx.fillStyle = g;
+    raysCtx.beginPath();
+    raysCtx.moveTo(cx, cy);
+    raysCtx.lineTo(cx + Math.cos(a - b.half) * R, cy + Math.sin(a - b.half) * R);
+    raysCtx.lineTo(cx + Math.cos(a + b.half) * R, cy + Math.sin(a + b.half) * R);
+    raysCtx.closePath();
+    raysCtx.fill();
+  }
+  raysCtx.globalCompositeOperation = "source-over";
+}
+
+function startTitleFloat() {
+  if (reduceMotion) return;
+  const el = document.getElementById("title3d");
+  if (!el) return;
+  gsap.to(el, { rotationY: 9, rotationX: -7, y: -10, duration: 4, ease: "sine.inOut", yoyo: true, repeat: -1 });
+  if (fineHover) {
+    const rx = gsap.quickTo(el, "rotationX", { duration: 1, ease: "power2.out" });
+    const ry = gsap.quickTo(el, "rotationY", { duration: 1, ease: "power2.out" });
+    boardArea.addEventListener("pointermove", (e) => {
+      const r = el.getBoundingClientRect();
+      ry(((e.clientX - (r.left + r.width / 2)) / r.width) * 22);
+      rx(((r.top + r.height / 2 - e.clientY) / r.height) * 16);
+    });
+  }
+}
+window.addEventListener("resize", sizeRays);
+
+/* one shared animation loop: speed lines + balls + title rays */
 function motionLoop(t) {
   const y = window.scrollY;
   scrollVel += (y - lastScrollY) * 0.15;
@@ -1110,6 +1188,8 @@ function motionLoop(t) {
   const heroRect = document.getElementById("hero").getBoundingClientRect();
   if (heroRect.bottom > 0) drawLines();
   renderBalls(t);
+  const tr = raysCanvas ? raysCanvas.getBoundingClientRect() : null;
+  if (tr && tr.bottom > 0 && tr.top < innerHeight) drawRays(t);
   requestAnimationFrame(motionLoop);
 }
 
