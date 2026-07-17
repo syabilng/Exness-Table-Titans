@@ -76,10 +76,10 @@ async function resetWeek() {
 
 /* ---------------- placeholder avatars ---------------- */
 const AVATAR_SCHEMES = [
-  { a: "#C44A3A", b: "#8f3122", pop: "#D544DF" },  // brick
-  { a: "#53B7C0", b: "#2e7c85", pop: "#C44A3A" },  // teal
-  { a: "#D544DF", b: "#8f2496", pop: "#53B7C0" },  // magenta
-  { a: "#3b1a78", b: "#240550", pop: "#C44A3A" },  // grape
+  { a: "#BF4332", b: "#280F5A", pop: "#F8712E" },  // brick
+  { a: "#66D2D0", b: "#1F0B53", pop: "#BF4332" },  // teal
+  { a: "#7C32B5", b: "#2D0D60", pop: "#66D2D0" },  // violet
+  { a: "#2D0D60", b: "#1F0B53", pop: "#F8712E" },  // grape
 ];
 
 function avatarFor(p) {
@@ -371,9 +371,25 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 
+/* the four approved text/wash combinations: [main, shade] */
+const WASHES = [
+  ["#66D2D0", "#1F0B53"],
+  ["#D6D3D8", "#2D0D60"],
+  ["#BF4332", "#280F5A"],
+  ["#7C32B5", "#F8712E"],
+];
+
 function fillProfile(p) {
   const rank = sorted().findIndex((x) => x.id === p.id) + 1;
   document.getElementById("profileRank").textContent = "#" + rank;
+
+  // per-player color wash on the portrait (Jordan-30 style duotone)
+  let wh = 0;
+  for (let i = 0; i < p.name.length; i++) wh = (wh * 31 + p.name.charCodeAt(i)) >>> 0;
+  const [wash, washshade] = WASHES[wh % WASHES.length];
+  const wrap = document.querySelector(".profile-photo-wrap");
+  wrap.style.setProperty("--wash", wash);
+  wrap.style.setProperty("--washshade", washshade);
   const nameEl = document.getElementById("profileName");
   nameEl.innerHTML = [...p.name.toUpperCase()]
     .map((c) => `<span class="ch">${c === " " ? " " : esc(c)}</span>`)
@@ -799,11 +815,11 @@ for (let i = 0; i < emberCount; i++) {
   });
 }
 
-// confetti-dust palette: mostly cream, with teal and magenta pops
+// confetti-dust palette: mostly cream, with teal and orange pops
 function speckColor(tint, twinkle) {
-  if (tint < 0.55) return `rgba(243, 238, 220, ${0.1 + 0.3 * twinkle})`;
-  if (tint < 0.8) return `rgba(83, 183, 192, ${0.14 + 0.34 * twinkle})`;
-  return `rgba(213, 68, 223, ${0.12 + 0.3 * twinkle})`;
+  if (tint < 0.55) return `rgba(252, 250, 221, ${0.1 + 0.28 * twinkle})`;
+  if (tint < 0.8) return `rgba(102, 210, 208, ${0.14 + 0.34 * twinkle})`;
+  return `rgba(248, 113, 46, ${0.12 + 0.3 * twinkle})`;
 }
 
 function drawBG(t) {
@@ -877,7 +893,8 @@ document.getElementById("btnToBoard").addEventListener("click", () => {
 
 /* ---------------- parallax + scroll-spun ping pong balls ---------------- */
 const parallaxEls = [...document.querySelectorAll("[data-parallax]")];
-const spinEls = [...document.querySelectorAll("[data-spin]")];
+const spin3dEls = [...document.querySelectorAll("[data-spin3d]")];
+const burstEl = document.querySelector("[data-burst]");
 let parallaxActive = false;
 
 function applyScrollMotion() {
@@ -885,10 +902,29 @@ function applyScrollMotion() {
   parallaxEls.forEach((el) => {
     el.style.transform = `translateY(${(y * parseFloat(el.dataset.parallax)).toFixed(1)}px)`;
   });
-  spinEls.forEach((el) => {
-    el.style.transform = `rotate(${(y * parseFloat(el.dataset.spin)).toFixed(1)}deg)`;
+  // ping pong ball decals tumble on a 3D axis with the scroll
+  spin3dEls.forEach((el) => {
+    el.style.transform = `rotate3d(0.45, 1, 0.12, ${(y * parseFloat(el.dataset.spin3d)).toFixed(1)}deg)`;
+  });
+  // the hero speed-line burst spins and zooms along its own lines
+  if (burstEl) {
+    const s = 1 + Math.min(y, 3000) * 0.00025;
+    burstEl.style.transform = `rotate(${(y * 0.025).toFixed(2)}deg) scale(${s.toFixed(4)})`;
+  }
+  // banner photos float against their slabs
+  document.querySelectorAll(".board .b-photo").forEach((ph) => {
+    const r = ph.parentElement.getBoundingClientRect();
+    if (r.bottom < -100 || r.top > innerHeight + 100) return;
+    const off = (r.top + r.height / 2 - innerHeight / 2) * -0.05;
+    ph.style.transform = `translateY(${off.toFixed(1)}px)`;
   });
 }
+
+/* header logo appears only after the hero (with its big logo) scrolls away */
+new IntersectionObserver((entries) => {
+  entries.forEach((e) =>
+    document.querySelector(".site-header").classList.toggle("is-scrolled", !e.isIntersecting));
+}, { rootMargin: "-120px 0px 0px 0px", threshold: 0 }).observe(document.getElementById("hero"));
 
 {
   let ticking = false;
